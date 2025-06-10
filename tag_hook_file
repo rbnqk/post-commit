@@ -1,0 +1,28 @@
+#just add this script as written in readme
+
+#!/bin/bash
+# filepath: .git/hooks/post-commit
+
+# Find the latest tag matching v* (sorted by version)
+LATEST_TAG=$(git tag --list 'v*' --sort=-v:refname | head -n 1)
+
+if [ -z "${LATEST_TAG}" ]; then
+  NEW_TAG="v0.0.1"
+else
+  VERSION="${LATEST_TAG#v}"
+  IFS='.' read -r MAJOR MINOR PATCH <<< "$VERSION"
+  PATCH=$((PATCH + 1))
+  NEW_TAG="v${MAJOR}.${MINOR}.${PATCH}"
+  # Find next available tag if this one exists
+  while git rev-parse "$NEW_TAG" >/dev/null 2>&1; do
+    PATCH=$((PATCH + 1))
+    NEW_TAG="v${MAJOR}.${MINOR}.${PATCH}"
+  done
+fi
+
+echo "Creating new tag: $NEW_TAG"
+git tag -a "$NEW_TAG" -m "Auto-version: $NEW_TAG"
+
+echo "Done."
+
+
